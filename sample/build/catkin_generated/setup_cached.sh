@@ -7,6 +7,3 @@
 # new environment variables
 
 # modified environment variables
-export CMAKE_PREFIX_PATH="/mnt/Documents/code/decision/sample/build/devel:$CMAKE_PREFIX_PATH"
-export ROSLISP_PACKAGE_DIRECTORIES='/mnt/Documents/code/decision/sample/build/devel/share/common-lisp'
-export ROS_PACKAGE_PATH="/mnt/Documents/code/decision/sample:$ROS_PACKAGE_PATH"

@@ -1,1 +1,1 @@
-/usr/bin/c++ -fPIC -g -shared -Wl,-soname,libgtest_maind.so -o ../lib/libgtest_maind.so CMakeFiles/gtest_main.dir/src/gtest_main.cc.o  -Wl,-rpath,/mnt/Documents/code/decision/sample/build/gtest/lib ../lib/libgtestd.so -lpthread 
+/usr/bin/c++ -fPIC -g -shared -Wl,-soname,libgtest_maind.so -o ../lib/libgtest_maind.so CMakeFiles/gtest_main.dir/src/gtest_main.cc.o  -Wl,-rpath,/mnt/Documents/code/tmp_decision/sample/build/gtest/lib ../lib/libgtestd.so -lpthread 

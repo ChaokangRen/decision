@@ -67,8 +67,8 @@ set(template_sample_CONFIG_INCLUDED TRUE)
 
 # set variables for source/devel/install prefixes
 if("TRUE" STREQUAL "TRUE")
-  set(template_sample_SOURCE_PREFIX /mnt/Documents/code/decision/sample)
-  set(template_sample_DEVEL_PREFIX /mnt/Documents/code/decision/sample/build/devel)
+  set(template_sample_SOURCE_PREFIX /mnt/Documents/code/tmp_decision/sample)
+  set(template_sample_DEVEL_PREFIX /mnt/Documents/code/tmp_decision/sample/build/devel)
   set(template_sample_INSTALL_PREFIX "")
   set(template_sample_PREFIX ${template_sample_DEVEL_PREFIX})
 else()
@@ -110,7 +110,7 @@ if(NOT " " STREQUAL " ")
         message(FATAL_ERROR "Project 'template_sample' specifies '${idir}' as an include dir, which is not found.  It does not exist in '${include}'.  ${_report}")
       endif()
     else()
-      message(FATAL_ERROR "Project 'template_sample' specifies '${idir}' as an include dir, which is not found.  It does neither exist as an absolute directory nor in '/mnt/Documents/code/decision/sample/${idir}'.  ${_report}")
+      message(FATAL_ERROR "Project 'template_sample' specifies '${idir}' as an include dir, which is not found.  It does neither exist as an absolute directory nor in '/mnt/Documents/code/tmp_decision/sample/${idir}'.  ${_report}")
     endif()
     _list_append_unique(template_sample_INCLUDE_DIRS ${include})
   endforeach()
@@ -154,7 +154,7 @@ foreach(library ${libraries})
     set(lib_path "")
     set(lib "${library}-NOTFOUND")
     # since the path where the library is found is returned we have to iterate over the paths manually
-    foreach(path /mnt/Documents/code/decision/sample/build/devel/lib;/opt/ros/noetic/lib)
+    foreach(path /mnt/Documents/code/tmp_decision/sample/build/devel/lib;/mnt/Documents/code/tmp_decision/sample/build/devel/lib;/opt/ros/noetic/lib)
       find_library(lib ${library}
         PATHS ${path}
         NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)

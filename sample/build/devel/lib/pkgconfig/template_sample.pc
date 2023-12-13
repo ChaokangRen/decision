@@ -1,4 +1,4 @@
-prefix=/mnt/Documents/code/decision/sample/build/devel
+prefix=/mnt/Documents/code/tmp_decision/sample/build/devel
 
 Name: template_sample
 Description: Description of template_sample
