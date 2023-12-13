@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="template_sample" name="template_sample" type="template_sample" respawn="false" output="screen">
+    </node>
+</launch>

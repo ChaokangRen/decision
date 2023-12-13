@@ -1,0 +1,8 @@
+prefix=/mnt/Documents/code/decision/sample/build/devel
+
+Name: template_sample
+Description: Description of template_sample
+Version: 0.1.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
