@@ -6,8 +6,14 @@
 #include <array>
 #include <iostream>
 #include <vector>
+
+#include "sglog/sglog.h"
 namespace jarvis {
 namespace decision_lib {
+
+#define sprintf SG_INFO
+#define sprintf_error SG_ERROR
+#define sprintf_warn SG_WARN
 
 enum ErrorType { kSuccess = 0, kWrongStatus, kIllegalInput, kUnknown };
 

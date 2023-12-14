@@ -4,9 +4,88 @@
 #include <iostream>
 
 #include "basics.h"
+#include "shapes.h"
+#include "state/frenet_state.h"
 namespace jarvis {
 namespace decision_lib {
 namespace common {
+class VehicleParam {
+public:
+    inline double width() const {
+        return width_;
+    }
+    inline double length() const {
+        return length_;
+    }
+    inline double wheel_base() const {
+        return wheel_base_;
+    }
+    inline double front_suspension() const {
+        return front_suspension_;
+    }
+    inline double rear_suspension() const {
+        return rear_suspension_;
+    }
+    inline double max_steering_angle() const {
+        return max_steering_angle_;
+    }
+    inline double max_longitudinal_acc() const {
+        return max_longitudinal_acc_;
+    }
+    inline double max_lateral_acc() const {
+        return max_lateral_acc_;
+    }
+    inline double d_cr() const {
+        return d_cr_;
+    }
+
+    inline void set_width(const double val) {
+        width_ = val;
+    }
+    inline void set_length(const double val) {
+        length_ = val;
+    }
+    inline void set_wheel_base(const double val) {
+        wheel_base_ = val;
+    }
+    inline void set_front_suspension(const double val) {
+        front_suspension_ = val;
+    }
+    inline void set_rear_suspension(const double val) {
+        rear_suspension_ = val;
+    }
+    inline void set_max_steering_angle(const double val) {
+        max_steering_angle_ = val;
+    }
+    inline void set_max_longitudinal_acc(const double val) {
+        max_longitudinal_acc_ = val;
+    }
+    inline void set_max_lateral_acc(const double val) {
+        max_lateral_acc_ = val;
+    }
+    inline void set_d_cr(const double val) {
+        d_cr_ = val;
+    }
+
+    /**
+     * @brief Print info
+     */
+    void print() const;
+
+private:
+    double width_ = 1.90;
+    double length_ = 4.88;
+    double wheel_base_ = 2.85;
+    double front_suspension_ = 0.93;
+    double rear_suspension_ = 1.10;
+    double max_steering_angle_ = 45.0;
+
+    double max_longitudinal_acc_ = 2.0;
+    double max_lateral_acc_ = 2.0;
+
+    double d_cr_ = 1.34;  // length between geometry center and rear axle
+};
+
 template <typename T, int N_DIM>
 class GridMapND {
 public:
@@ -33,7 +112,7 @@ public:
               const std::array<std::string, N_DIM> &dims_name);
 
     inline std::array<int, N_DIM> dims_size() const {
-        return dims_size;
+        return dims_size_;
     }
     inline int dims_size(const int &dim) const {
         return dims_size_.at(dim);
@@ -473,16 +552,59 @@ std::array<int, N_DIM> GridMapND<T, N_DIM>::GetNDimIdxUsingMonoIdx(
     return idx_nd;
 }
 
-// struct DrivingCube {
-//     vec_E<Vec3i> seeds;
-//     AxisAlignedCubeNd<int, 3> cube;
-// };
+struct DrivingCube {
+    vec_E<Vec3i> seeds;
+    AxisAlignedCubeNd<int, 3> cube;
+};
 
-// struct DrivingCorridor {
-//     int id;
-//     bool is_valid;
-//     vec_E<DrivingCube> cubes;
-// };
+struct DrivingCorridor {
+    int id;
+    bool is_valid;
+    vec_E<DrivingCube> cubes;
+};
+
+template <int N_DIM>
+struct SpatioTemporalSemanticCubeNd {
+    decimal_t t_lb, t_ub;
+    std::array<decimal_t, N_DIM> p_lb, p_ub;
+    std::array<decimal_t, N_DIM> v_lb, v_ub;
+    std::array<decimal_t, N_DIM> a_lb, a_ub;
+
+    SpatioTemporalSemanticCubeNd() {
+        FillDefaultBounds();
+    }
+
+    void FillDefaultBounds() {
+        // ~ for optimization, infinity bound will cause numerical
+        // ~ unstable. So we put some loose bounds by default
+        t_lb = 0.0;
+        t_ub = 1.0;
+
+        const decimal_t default_pos_lb = -1;
+        const decimal_t default_pos_ub = 1;
+        const decimal_t default_vel_lb = -50.0;
+        const decimal_t default_vel_ub = 50.0;
+        const decimal_t default_acc_lb = -20.0;
+        const decimal_t default_acc_ub = 20.0;
+
+        p_lb.fill(default_pos_lb);
+        v_lb.fill(default_vel_lb);
+        a_lb.fill(default_acc_lb);
+
+        p_ub.fill(default_pos_ub);
+        v_ub.fill(default_vel_ub);
+        a_ub.fill(default_acc_ub);
+    }
+};
+
+/**
+ * @brief Vehicle info under Frenet-frame
+ */
+struct FsVehicle {
+    FrenetState frenet_state;
+    vec_E<Vec2f> vertices;
+};
+
 }  // namespace common
 }  // namespace decision_lib
 }  // namespace jarvis

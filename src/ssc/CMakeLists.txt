@@ -8,10 +8,10 @@ pkg_check_modules(PC_DEPEND
     jsoncpp
 )
 
+find_package(OpenCV REQUIRED)
 include_directories(
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/include/template
-    ${CMAKE_SOURCE_DIR}/thirdparty/Eigen
     ${CMAKE_SOURCE_DIR}/src/common
 )
 
@@ -22,4 +22,6 @@ add_library(${PROJECT_NAME} STATIC
 target_link_libraries(${PROJECT_NAME}
     ${SGLog_LIBRARIES}
     common
+    opencv_core
+    opencv_highgui
 )
