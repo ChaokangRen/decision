@@ -1,1 +1,1 @@
-/usr/bin/c++ -fPIC -g -shared -Wl,-soname,libgmockd.so -o ../lib/libgmockd.so "CMakeFiles/gmock.dir/src/gmock-all.cc.o"  -Wl,-rpath,/mnt/Documents/code/tmp_decision/sample/build/gtest/lib ../lib/libgtestd.so -lpthread 
+/usr/bin/c++ -fPIC -g -shared -Wl,-soname,libgmockd.so -o ../lib/libgmockd.so "CMakeFiles/gmock.dir/src/gmock-all.cc.o"  -Wl,-rpath,/mnt/Documents/code/decision/sample/build/gtest/lib ../lib/libgtestd.so -lpthread 

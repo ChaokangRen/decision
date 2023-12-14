@@ -3,10 +3,12 @@ project(common)
 
 find_package(PkgConfig QUIET)
 pkg_check_modules(PC_DEPEND
+    eigen3
     sglog
     sgtime
     jsoncpp
 )
+
 
 message("depend inc: ${PC_DEPEND_INCLUDE_DIRS}")
 message("depend lib: ${PC_DEPEND_LIBRARIES}")
@@ -18,7 +20,7 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME} STATIC
-    semantics.cc 
+    basics/semantics.cc 
 )
 
 target_link_libraries(${PROJECT_NAME}
