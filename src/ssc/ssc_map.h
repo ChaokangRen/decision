@@ -108,12 +108,60 @@ public:
     ErrorType ConstructCorridorUsingInitialTrajectory(
         GridMap3D *p_grid, const vec_E<common::FsVehicle> &trajs);
 
+    ErrorType ClearGridMap();
+
+    ErrorType ClearDrivingCorridor();
+
+    ErrorType GetFinalGlobalMetricCubesList();
+
+    ErrorType ResetSscMap(const common::FrenetState &ini_frenet_state);
+
 private:
     bool CheckIfCubeIsFree(GridMap3D *p_grid,
                            const common::AxisAlignedCubeNd<int, 3> &cube) const;
+    bool CheckIfPlaneIsFreeOnXAxis(
+        GridMap3D *p_grid, const common::AxisAlignedCubeNd<int, 3> &cube,
+        const int &z) const;
+
+    bool CheckIfPlaneIsFreeOnYAxis(
+        GridMap3D *p_grid, const common::AxisAlignedCubeNd<int, 3> &cube,
+        const int &z) const;
+
+    bool CheckIfPlaneIsFreeOnZAxis(
+        GridMap3D *p_grid, const common::AxisAlignedCubeNd<int, 3> &cube,
+        const int &z) const;
+    bool CheckIfCubeContainsSeed(
+        const common::AxisAlignedCubeNd<int, 3> &cube_a,
+        const Vec3i &seed) const;
+
+    ErrorType GetTimeCoveredCubeIndices(
+        const common::DrivingCorridor *p_corridor, const int &start_id,
+        const int &dir, const int &t_trans, std::vector<int> *idx_list) const;
+
+    ErrorType CorridorRelaxation(GridMap3D *p_grid,
+                                 common::DrivingCorridor *p_corridor);
+
+    bool InflateCubeOnXPosAxis(GridMap3D *p_grid, const int &n_step,
+                               common::AxisAlignedCubeNd<int, 3> *cube);
+    bool InflateCubeOnXNegAxis(GridMap3D *p_grid, const int &n_step,
+                               common::AxisAlignedCubeNd<int, 3> *cube);
+    bool InflateCubeOnYPosAxis(GridMap3D *p_grid, const int &n_step,
+                               common::AxisAlignedCubeNd<int, 3> *cube);
+    bool InflateCubeOnYNegAxis(GridMap3D *p_grid, const int &n_step,
+                               common::AxisAlignedCubeNd<int, 3> *cube);
+    bool InflateCubeOnZPosAxis(GridMap3D *p_grid, const int &n_step,
+                               common::AxisAlignedCubeNd<int, 3> *cube);
+    bool InflateCubeOnZNegAxis(GridMap3D *p_grid, const int &n_step,
+                               common::AxisAlignedCubeNd<int, 3> *cube);
+
     ErrorType GetInitialCubeUsingSeed(
         const Vec3i &seed_0, const Vec3i &seed_1,
         common::AxisAlignedCubeNd<int, 3> *cube) const;
+
+    ErrorType InflateCubeIn3dGrid(GridMap3D *p_grid,
+                                  const std::array<bool, 6> &dir_disabled,
+                                  const std::array<int, 6> &dir_step,
+                                  common::AxisAlignedCubeNd<int, 3> *cube);
 
     ErrorType FillStaticPart(const vec_E<Vec2f> &obs_grid_fs);
 

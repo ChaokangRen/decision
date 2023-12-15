@@ -86,6 +86,65 @@ private:
     double d_cr_ = 1.34;  // length between geometry center and rear axle
 };
 
+enum class LongitudinalBehavior {
+    kMaintain = 0,
+    kAccelerate,
+    kDecelerate,
+    kStopping
+};
+
+enum class LateralBehavior {
+    kUndefined = 0,
+    kLaneKeeping,
+    kLaneChangeLeft,
+    kLaneChangeRight,
+};
+
+struct GridMapMetaInfo {
+    int width = 0;
+    int height = 0;
+    double resolution = 0;
+    double w_metric = 0;
+    double h_metric = 0;
+
+    /**
+     * @brief Construct a new Grid Map Meta Info object
+     */
+    GridMapMetaInfo();
+
+    /**
+     * @brief Construct a new Grid Map Meta Info object
+     *
+     * @param w width
+     * @param h height
+     * @param res resolution
+     */
+    GridMapMetaInfo(const int w, const int h, const double res);
+
+    /**
+     * @brief Print info
+     */
+    void print() const;
+};
+
+struct SemanticLane {
+    int id;
+    int dir;
+
+    std::vector<int> child_id;
+    std::vector<int> father_id;
+
+    int l_lane_id;
+    bool l_change_avbl;
+    int r_lane_id;
+    bool r_change_avbl;
+
+    std::string behavior;
+    decimal_t length;
+
+    Lane lane;
+};
+
 template <typename T, int N_DIM>
 class GridMapND {
 public:

@@ -23,6 +23,9 @@ include_directories(
 add_library(${PROJECT_NAME} STATIC
     basics/semantics.cc 
     basics/shapes.cc
+    math/calculations.cc 
+    spline/lookup_table.cc 
+    
 )
 
 target_link_libraries(${PROJECT_NAME}
