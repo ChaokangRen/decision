@@ -2,7 +2,7 @@
 #define _COMMON_LANE_LANE_H__
 
 #include "basics/config.h"
-#include "common/spline/spline.h"
+#include "spline/spline.h"
 #include "state/state.h"
 
 namespace jarvis {

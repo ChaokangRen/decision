@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "basics.h"
+#include "lane/lane.h"
 #include "shapes.h"
 #include "state/frenet_state.h"
 namespace jarvis {

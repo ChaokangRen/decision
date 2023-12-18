@@ -6,7 +6,8 @@
 #include <vector>
 
 #include "polynomial.h"
-
+namespace jarvis {
+namespace decision_lib {
 namespace common {
 
 template <int N_DEG, int N_DIM>
@@ -139,7 +140,8 @@ private:
     vec_E<PolynomialType> poly_;
     std::vector<decimal_t> vec_domain_;
 };
-
 }  // namespace common
+}  // namespace decision_lib
+}  // namespace jarvis
 
 #endif

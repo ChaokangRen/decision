@@ -6,7 +6,8 @@
 #include "basics/basics.h"
 #include "math/calculations.h"
 #include "spline/lookup_table.h"
-
+namespace jarvis {
+namespace decision_lib {
 namespace common {
 
 /**
@@ -179,8 +180,8 @@ public:
      * @brief Debug function
      */
     void print() const {
-        std::cout << std::fixed << std::setprecision(7) << coeff_.transpose()
-                  << std::endl;
+        // std::cout << std::fixed << std::setprecision(7) << coeff_.transpose()
+        //           << std::endl;
     }
 
 private:
@@ -229,7 +230,8 @@ public:
 private:
     std::array<Polynomial<N_DEG>, N_DIM> polys_;
 };
-
 }  // namespace common
+}  // namespace decision_lib
+}  // namespace jarvis
 
 #endif
