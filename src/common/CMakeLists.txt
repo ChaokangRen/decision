@@ -23,8 +23,11 @@ include_directories(
 add_library(${PROJECT_NAME} STATIC
     basics/semantics.cc 
     basics/shapes.cc
+    basics/rss_checker.cc
     math/calculations.cc 
-    spline/lookup_table.cc 
+    spline/lookup_table.cc
+    lane/lane.cc
+    state/state_transformer.cc
     
 )
 

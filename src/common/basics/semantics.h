@@ -2,6 +2,7 @@
 #define _COMMON_SEMANTIC_H_
 #include <cmath>
 #include <iostream>
+#include <unordered_map>
 
 #include "basics.h"
 #include "lane/lane.h"
@@ -144,6 +145,51 @@ struct SemanticLane {
     decimal_t length;
 
     Lane lane;
+};
+
+struct EnumClassHash {
+    template <typename T>
+    std::size_t operator()(T t) const {
+        return static_cast<std::size_t>(t);
+    }
+};
+struct ProbDistOfLatBehaviors {
+    bool is_valid = false;
+    std::unordered_map<LateralBehavior, decimal_t, EnumClassHash> probs{
+        {common::LateralBehavior::kLaneChangeLeft, 0.0},
+        {common::LateralBehavior::kLaneChangeRight, 0.0},
+        {common::LateralBehavior::kLaneKeeping, 0.0}};
+
+    void SetEntry(const LateralBehavior &beh, const decimal_t &val) {
+        probs[beh] = val;
+    }
+
+    bool CheckIfNormalized() const {
+        decimal_t sum = 0.0;
+        for (const auto &entry : probs) {
+            sum += entry.second;
+        }
+        if (fabs(sum - 1.0) < kEPS) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool GetMaxProbBehavior(LateralBehavior *beh) const {
+        if (!is_valid) return false;
+
+        decimal_t max_prob = -1.0;
+        LateralBehavior max_beh;
+        for (const auto &entry : probs) {
+            if (entry.second > max_prob) {
+                max_prob = entry.second;
+                max_beh = entry.first;
+            }
+        }
+        *beh = max_beh;
+        return true;
+    }
 };
 
 template <typename T, int N_DIM>
@@ -664,6 +710,377 @@ struct FsVehicle {
     FrenetState frenet_state;
     vec_E<Vec2f> vertices;
 };
+
+class Vehicle {
+public:
+    Vehicle();
+    Vehicle(const VehicleParam &param, const State &state);
+    Vehicle(const int &id, const VehicleParam &param, const State &state);
+    Vehicle(const int &id, const std::string &subclass,
+            const VehicleParam &param, const State &state);
+
+    inline int id() const {
+        return id_;
+    }
+    inline std::string subclass() const {
+        return subclass_;
+    }
+    inline VehicleParam param() const {
+        return param_;
+    }
+    inline State state() const {
+        return state_;
+    }
+    inline std::string type() const {
+        return type_;
+    }
+
+    inline void set_id(const int &id) {
+        id_ = id;
+    }
+    inline void set_subclass(const std::string &subclass) {
+        subclass_ = subclass;
+    }
+    inline void set_type(const std::string &type) {
+        type_ = type;
+    }
+    inline void set_param(const VehicleParam &in) {
+        param_ = in;
+    }
+    inline void set_state(const State &in) {
+        state_ = in;
+    }
+
+    /**
+     * @brief Get 3-DoF vehicle state at center of rear axle, x-y-yaw
+     *
+     * @return Vec3f 3-dof vehicle state
+     */
+    Vec3f Ret3DofState() const;
+
+    /**
+     * @brief Get 2D OBB of the vehicle
+     *
+     * @return OrientedBoundingBox2D OBB
+     */
+    OrientedBoundingBox2D RetOrientedBoundingBox() const;
+
+    /**
+     * @brief Return color in jet colormap using mapping function
+     *
+     * @param vertices pointer of vertice container
+     * @return ErrorType
+     */
+    ErrorType RetVehicleVertices(vec_E<Vec2f> *vertices) const;
+
+    /**
+     * @brief Return front and rear points on longitudinal axle
+     *
+     * @param vertices
+     * @return ErrorType
+     */
+    ErrorType RetBumperVertices(std::array<Vec2f, 2> *vertices) const;
+
+    /**
+     * @brief Return 3-DoF state at geometry center, x-y-yaw
+     *
+     * @param state pointer of state
+     * @return ErrorType
+     */
+    ErrorType Ret3DofStateAtGeometryCenter(Vec3f *state) const;
+
+    /**
+     * @brief Print info
+     */
+    void print() const;
+
+private:
+    int id_{kInvalidAgentId};
+    std::string subclass_;
+    std::string type_;
+    VehicleParam param_;
+    State state_;
+};
+/**
+ * @brief Vehicle with semantic info
+ */
+struct SemanticVehicle {
+    // * vehicle
+    Vehicle vehicle;
+
+    // * nearest lane info
+    int nearest_lane_id{kInvalidLaneId};
+    decimal_t dist_to_lane{-1.0};
+    decimal_t arc_len_onlane{-1.0};
+
+    // * prediction
+    ProbDistOfLatBehaviors probs_lat_behaviors;
+
+    // * argmax behavior
+    LateralBehavior lat_behavior{LateralBehavior::kUndefined};
+    Lane lane;
+};
+
+struct VehicleSet {
+    std::unordered_map<int, Vehicle> vehicles;
+
+    /**
+     * @brief Print info
+     */
+    void print() const;
+};
+
+struct SemanticVehicleSet {
+    std::unordered_map<int, SemanticVehicle> semantic_vehicles;
+};
+
+struct LaneRaw {
+    int id;
+    int dir;
+
+    std::vector<int> child_id;
+    std::vector<int> father_id;
+
+    int l_lane_id;
+    bool l_change_avbl;
+    int r_lane_id;
+    bool r_change_avbl;
+
+    std::string behavior;
+    decimal_t length;
+
+    Vec2f start_point;
+    Vec2f final_point;
+    vec_E<Vec2f> lane_points;
+
+    /**
+     * @brief Print info
+     */
+    void print() const;
+};
+struct LaneNet {
+    std::unordered_map<int, LaneRaw> lane_set;
+
+    /**
+     * @brief Clear the container
+     */
+    inline void clear() {
+        lane_set.clear();
+    }
+
+    /**
+     * @brief Print info
+     */
+    void print() const;
+};
+
+struct SemanticLaneSet {
+    std::unordered_map<int, SemanticLane> semantic_lanes;
+
+    /**
+     * @brief Return the size of container
+     *
+     * @return int size
+     */
+    inline int size() const {
+        return semantic_lanes.size();
+    }
+
+    /**
+     * @brief Clear the container
+     */
+    void clear() {
+        semantic_lanes.clear();
+    }
+
+    /**
+     * @brief Print info
+     */
+    void print() const;
+};
+
+struct SemanticBehavior {
+    LateralBehavior lat_behavior;
+    LongitudinalBehavior lon_behavior;
+    Lane ref_lane;
+    decimal_t actual_desired_velocity{0.0};
+
+    vec_E<vec_E<Vehicle>> forward_trajs;
+    std::vector<LateralBehavior> forward_behaviors;
+    vec_E<std::unordered_map<int, vec_E<Vehicle>>> surround_trajs;
+
+    State state;
+
+    SemanticBehavior() {
+        lat_behavior = LateralBehavior::kLaneKeeping;
+        lon_behavior = LongitudinalBehavior::kMaintain;
+    }
+    SemanticBehavior(const LateralBehavior &beh) : lat_behavior(beh) {}
+};
+
+class TrafficSignal {
+public:
+    TrafficSignal();
+    TrafficSignal(const Vec2f &start_point, const Vec2f &end_point,
+                  const Vec2f &valid_time, const Vec2f &vel_range);
+    void set_start_point(const Vec2f &start_point);
+    void set_end_point(const Vec2f &end_point);
+    void set_valid_time_til(const decimal_t max_valid_time);
+    void set_valid_time_begin(const decimal_t min_valid_time);
+    void set_valid_time(const Vec2f &valid_time);
+    void set_vel_range(const Vec2f &vel_range);
+    void set_lateral_range(const Vec2f &lateral_range);
+    void set_max_velocity(const decimal_t max_velocity);
+
+    void set_start_angle(const decimal_t angle) {
+        start_angle_ = angle;
+    }
+    void set_end_angle(const decimal_t angle) {
+        end_angle_ = angle;
+    }
+
+    Vec2f start_point() const;
+    Vec2f end_point() const;
+    Vec2f valid_time() const;
+    Vec2f vel_range() const;
+    Vec2f lateral_range() const;
+    decimal_t max_velocity() const;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+
+    decimal_t start_angle() const {
+        return start_angle_;
+    }
+    decimal_t end_angle() const {
+        return end_angle_;
+    }
+
+protected:
+    Vec2f start_point_;          // 2d point in x-y plane
+    decimal_t start_angle_ = 0;  // ! (lu.zhang) Temp, for vis
+    Vec2f end_point_;            // 2d point in x-y plane
+    decimal_t end_angle_ = 0;    // ! (lu.zhang) Temp, for vis
+    Vec2f valid_time_;           // time stamp [stamp_begin, stamp_end]
+    Vec2f vel_range_;            // velocity [lower_bound, upper_bound]
+    Vec2f lateral_range_;
+};
+class SpeedLimit : public TrafficSignal {
+public:
+    SpeedLimit(const Vec2f &start_point, const Vec2f &end_point,
+               const Vec2f &vel_range);
+};
+
+class StoppingSign : public TrafficSignal {
+public:
+    StoppingSign(const Vec2f &start_point, const Vec2f &end_point);
+};
+
+class TrafficLight : public TrafficSignal {
+public:
+    enum Type { Green = 0, Red, Yellow, RedYellow };
+    void set_type(const Type &type);
+    Type type() const;
+
+private:
+    Type type_;
+};
+
+class SemanticsUtils {
+public:
+    /**
+     * @brief Return the name of longitudinal behavior
+     *
+     * @param behavior
+     * @return std::string
+     */
+    static std::string RetLonBehaviorName(const LongitudinalBehavior b) {
+        std::string b_str;
+        switch (b) {
+            case LongitudinalBehavior::kMaintain: {
+                b_str = std::string("M");
+                break;
+            }
+            case LongitudinalBehavior::kAccelerate: {
+                b_str = std::string("A");
+                break;
+            }
+            case LongitudinalBehavior::kDecelerate: {
+                b_str = std::string("D");
+                break;
+            }
+            case LongitudinalBehavior::kStopping: {
+                b_str = std::string("S");
+                break;
+            }
+            default: {
+                b_str = std::string("Null");
+                break;
+            }
+        }
+        return b_str;
+    }
+
+    /**
+     * @brief Return the name of lateral behavior
+     *
+     * @param behavior
+     * @return std::string
+     */
+    static std::string RetLatBehaviorName(const LateralBehavior b) {
+        std::string b_str;
+        switch (b) {
+            case LateralBehavior::kUndefined: {
+                b_str = std::string("U");
+                break;
+            }
+            case LateralBehavior::kLaneKeeping: {
+                b_str = std::string("K");
+                break;
+            }
+            case LateralBehavior::kLaneChangeLeft: {
+                b_str = std::string("L");
+                break;
+            }
+            case LateralBehavior::kLaneChangeRight: {
+                b_str = std::string("R");
+                break;
+            }
+            default: {
+                b_str = std::string("Null");
+                break;
+            }
+        }
+        return b_str;
+    }
+
+    /**
+     * @brief Get the Oriented Bounding Box For Vehicle Using State object
+     *
+     * @param param Vehicle parameter
+     * @param s Vehicle state
+     * @param obb Output Vehicle OBB
+     * @return ErrorType
+     */
+    static ErrorType GetOrientedBoundingBoxForVehicleUsingState(
+        const VehicleParam &param, const State &s, OrientedBoundingBox2D *obb);
+
+    /**
+     * @brief Get the Vehicle Vertices
+     *
+     * @param param Vehicle parameter
+     * @param state Vehicle state
+     * @param vertices Output vertice vector
+     * @return ErrorType
+     */
+    static ErrorType GetVehicleVertices(const VehicleParam &param,
+                                        const State &state,
+                                        vec_E<Vec2f> *vertices);
+
+    static ErrorType InflateVehicleBySize(const Vehicle &vehicle_in,
+                                          const decimal_t delta_w,
+                                          const decimal_t delta_l,
+                                          Vehicle *vehicle_out);
+
+};  // SemanticsUtils
 
 }  // namespace common
 }  // namespace decision_lib

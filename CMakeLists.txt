@@ -27,10 +27,12 @@ include_directories(
     ${PC_DEPEND_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/src/common
     ${CMAKE_SOURCE_DIR}/src/ssc
+    ${CMAKE_SOURCE_DIR}/src/semantic_map_manager
 )
 
 add_subdirectory(src/common)
 add_subdirectory(src/ssc)
+add_subdirectory(src/semantic_map_manager)
 
 add_library(${PROJECT_NAME} SHARED
     src/template_impl.cpp
@@ -40,6 +42,7 @@ target_link_libraries(${PROJECT_NAME}
     ${PC_DEPEND_LIBRARIES}
     common 
     ssc_planner
+    semantic_manager
 )
 
 set_target_properties(${PROJECT_NAME}

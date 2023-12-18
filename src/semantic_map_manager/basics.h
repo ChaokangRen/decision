@@ -20,8 +20,8 @@
 
 #include "basics/basics.h"
 #include "basics/semantics.h"
-#include "common/state/state.h"
 #include "state/free_state.h"
+#include "state/state.h"
 namespace jarvis {
 namespace decision_lib {
 namespace semantic_map_manager {

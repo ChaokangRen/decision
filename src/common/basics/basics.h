@@ -1,6 +1,8 @@
 #ifndef _COMMON_BASICS_H_
 #define _COMMON_BASICS_H_
 
+#include <assert.h>
+
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
 #include <array>
