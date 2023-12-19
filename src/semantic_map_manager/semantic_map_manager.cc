@@ -144,12 +144,13 @@ ErrorType SemanticMapManager::UpdateSemanticMap(
     UpdateSemanticLaneSet();
 
     // * update key lanes and its LUT
+    //找到自车附近的最多五条车道，以自车为卯点，前250后150,做成5次多项式
     if (agent_config_info_.enable_fast_lane_lut) {
         UpdateLocalLanesAndFastLut();
     }
 
     // // * update semantic info for vehicles
-    // UpdateSemanticVehicles();
+    UpdateSemanticVehicles();
 
     // // * update selected key vehicles
     // UpdateKeyVehicles();
@@ -234,6 +235,129 @@ ErrorType SemanticMapManager::UpdateSemanticLaneSet() {
             }
         }
     }
+    return kSuccess;
+}
+
+ErrorType SemanticMapManager::UpdateSemanticVehicles() {
+    // * construct semantic vehicle set
+    // * necessary info: vehicle, nearest_lane_id(w.o. navi_path),
+    // * lat_behavior w.r.t nearest lane
+    // * other info: pred_traj, ref_lane
+    common::SemanticVehicleSet semantic_vehicles_tmp;
+    for (const auto &v : surrounding_vehicles_.vehicles) {
+        common::SemanticVehicle semantic_vehicle;
+        semantic_vehicle.vehicle = v.second;
+        //获取离当前车辆最近的lane
+        GetNearestLaneIdUsingState(
+            semantic_vehicle.vehicle.state().ToXYTheta(), std::vector<int>(),
+            &semantic_vehicle.nearest_lane_id, &semantic_vehicle.dist_to_lane,
+            &semantic_vehicle.arc_len_onlane);
+        //获取当前车辆可能的横向行为
+        NaiveRuleBasedLateralBehaviorPrediction(
+            semantic_vehicle.vehicle, semantic_vehicle.nearest_lane_id,
+            &semantic_vehicle.probs_lat_behaviors);
+        semantic_vehicle.probs_lat_behaviors.GetMaxProbBehavior(
+            &semantic_vehicle.lat_behavior);
+
+        decimal_t max_backward_len = 10.0;
+        decimal_t forward_lane_len =
+            std::max(semantic_vehicle.vehicle.state().velocity * 10.0, 50);
+        //为当前横向行为选择对行的ref lane
+        GetRefLaneForStateByBehavior(
+            semantic_vehicle.vehicle.state(), std::vector<int>(),
+            semantic_vehicle.lat_behavior, forward_lane_len, max_backward_len,
+            false, &semantic_vehicle.lane);
+
+        semantic_vehicles_tmp.semantic_vehicles.insert(
+            std::pair<int, common::SemanticVehicle>(
+                semantic_vehicle.vehicle.id(), semantic_vehicle));
+    }
+    {
+        semantic_surrounding_vehicles_.semantic_vehicles.swap(
+            semantic_vehicles_tmp.semantic_vehicles);
+    }
+    return kSuccess;
+}
+
+ErrorType SemanticMapManager::NaiveRuleBasedLateralBehaviorPrediction(
+    const common::Vehicle &vehicle, const int nearest_lane_id,
+    common::ProbDistOfLatBehaviors *lat_probs) {
+    if (nearest_lane_id == kInvalidLaneId) {
+        lat_probs->is_valid = false;
+        return kWrongStatus;
+    }
+
+    SemanticLane nearest_lane =
+        semantic_lane_set_.semantic_lanes.at(nearest_lane_id);
+    common::StateTransformer stf(nearest_lane.lane);
+
+    common::FreeState fs;
+    if (stf.GetFrenetStateFromState(vehicle.state(), &fs) != kSuccess) {
+        lat_probs->is_valid = false;
+        return kWrongStatus;
+    }
+
+    decimal_t prob_lcl = 0.0;
+    decimal_t prob_lcr = 0.0;
+    decimal_t prob_lk = 0.0;
+
+    const decimal_t lat_distance_threshold = 0.4;
+    const decimal_t lat_vel_threshold = 0.35;
+
+    if (use_right_hand_axis_) {
+        if (fs.vec_dt[0] > lat_distance_threshold &&
+            fs.vec_dt[1] > lat_vel_threshold &&
+            nearest_lane.l_lane_id != kInvalidLaneId &&
+            nearest_lane.l_change_avbl) {
+            prob_lcl = 1.0;
+            sprintf(
+                "[NaivePrediction]vehicle %d lane id %d, lat d %lf lat dd %lf, "
+                "behavior "
+                "lcl.\n",
+                vehicle.id(), nearest_lane_id, fs.vec_dt[0], fs.vec_dt[1]);
+        } else if (fs.vec_dt[0] < -lat_distance_threshold &&
+                   fs.vec_dt[1] < -lat_vel_threshold &&
+                   nearest_lane.r_lane_id != kInvalidLaneId &&
+                   nearest_lane.r_change_avbl) {
+            prob_lcr = 1.0;
+            sprintf(
+                "[NaivePrediction]vehicle %d lane id %d, lat d %lf lat dd %lf, "
+                "behavior "
+                "lcr.\n",
+                vehicle.id(), nearest_lane_id, fs.vec_dt[0], fs.vec_dt[1]);
+        } else {
+            prob_lk = 1.0;
+        }
+    } else {
+        if (fs.vec_dt[0] > lat_distance_threshold &&
+            fs.vec_dt[1] > lat_vel_threshold &&
+            nearest_lane.r_lane_id != kInvalidLaneId &&
+            nearest_lane.r_change_avbl) {
+            prob_lcr = 1.0;
+            sprintf(
+                "[NaivePrediction]vehicle %d lane id %d, lat d %lf lat dd %lf, "
+                "behavior "
+                "lcr.\n",
+                vehicle.id(), nearest_lane_id, fs.vec_dt[0], fs.vec_dt[1]);
+        } else if (fs.vec_dt[0] < -lat_distance_threshold &&
+                   fs.vec_dt[1] < -lat_vel_threshold &&
+                   nearest_lane.l_lane_id != kInvalidLaneId &&
+                   nearest_lane.l_change_avbl) {
+            prob_lcl = 1.0;
+            sprintf(
+                "[NaivePrediction]vehicle %d lane id %d, lat d %lf lat dd %lf, "
+                "behavior "
+                "lcl.\n",
+                vehicle.id(), nearest_lane_id, fs.vec_dt[0], fs.vec_dt[1]);
+        } else {
+            prob_lk = 1.0;
+        }
+    }
+    lat_probs->SetEntry(common::LateralBehavior::kLaneChangeLeft, prob_lcl);
+    lat_probs->SetEntry(common::LateralBehavior::kLaneChangeRight, prob_lcr);
+    lat_probs->SetEntry(common::LateralBehavior::kLaneKeeping, prob_lk);
+    lat_probs->is_valid = true;
+
     return kSuccess;
 }
 
@@ -563,6 +687,103 @@ ErrorType SemanticMapManager::SampleLane(const common::Lane &lane,
         (*accum_dist) += step;
     }
     return kSuccess;
+}
+
+ErrorType SemanticMapManager::GetRefLaneForStateByBehavior(
+    const common::State &state, const std::vector<int> &navi_path,
+    const LateralBehavior &behavior, const decimal_t &max_forward_len,
+    const decimal_t &max_back_len, const bool is_high_quality,
+    common::Lane *lane) const {
+    Vec3f state_3dof(state.vec_position(0), state.vec_position(1), state.angle);
+    int current_lane_id;
+    decimal_t distance_to_lane;
+    decimal_t arc_len;
+    if (GetNearestLaneIdUsingState(state_3dof, navi_path, &current_lane_id,
+                                   &distance_to_lane, &arc_len) != kSuccess) {
+        printf("[GetRefLaneForStateByBehavior]Cannot get nearest lane.\n");
+        return kWrongStatus;
+    }
+
+    if (distance_to_lane > max_distance_to_lane_) {
+        return kWrongStatus;
+    }
+
+    int target_lane_id;
+    if (GetTargetLaneId(current_lane_id, behavior, &target_lane_id) !=
+        kSuccess) {
+        // sprintf(
+        //     "[GetRefLaneForStateByBehavior]fail to get target lane from lane
+        //     %d " "with behavior %d.\n", current_lane_id,
+        //     static_cast<int>(behavior));
+        return kWrongStatus;
+    }
+
+    if (agent_config_info_.enable_fast_lane_lut && has_fast_lut_) {
+        if (segment_to_local_lut_.end() !=
+            segment_to_local_lut_.find(target_lane_id)) {
+            // * here we just select the first local lane from several
+            // candidates
+            int id = *segment_to_local_lut_.at(target_lane_id).begin();
+            *lane = local_lanes_.at(id);
+            return kSuccess;
+        }
+    }
+
+    // ~ the reflane length should be consist with maximum speed and maximum
+    // ~ forward simulation time, the current setup is for 30m/s x 7.5s forward
+    vec_Vecf<2> samples;
+    if (GetLocalLaneSamplesByState(state, target_lane_id, navi_path,
+                                   max_forward_len, max_back_len,
+                                   &samples) != kSuccess) {
+        sprintf(
+            "[GetRefLaneForStateByBehavior]Cannot get local lane samples.\n");
+        return kWrongStatus;
+    }
+
+    if (kSuccess != GetLaneBySampledPoints(samples, is_high_quality, lane)) {
+        return kWrongStatus;
+    }
+
+    return kSuccess;
+}
+
+ErrorType SemanticMapManager::GetTargetLaneId(const int lane_id,
+                                              const LateralBehavior &behavior,
+                                              int *target_lane_id) const {
+    auto it = semantic_lane_set_.semantic_lanes.find(lane_id);
+    if (it == semantic_lane_set_.semantic_lanes.end()) {
+        return kWrongStatus;
+    } else {
+        if (behavior == common::LateralBehavior::kLaneKeeping ||
+            behavior == common::LateralBehavior::kUndefined) {
+            *target_lane_id = lane_id;
+        } else if (behavior == common::LateralBehavior::kLaneChangeLeft) {
+            if (it->second.l_change_avbl) {
+                *target_lane_id = it->second.l_lane_id;
+            } else {
+                return kWrongStatus;
+            }
+        } else if (behavior == common::LateralBehavior::kLaneChangeRight) {
+            if (it->second.r_change_avbl) {
+                *target_lane_id = it->second.r_lane_id;
+            } else {
+                return kWrongStatus;
+            }
+        } else {
+            assert(false);
+        }
+    }
+    return kSuccess;
+}
+ErrorType SemanticMapManager::GetLocalLaneSamplesByState(
+    const common::State &state, const int lane_id,
+    const std::vector<int> &navi_path, const decimal_t max_reflane_dist,
+    const decimal_t max_backward_dist, vec_Vecf<2> *samples) const {
+    if (semantic_lane_set_.semantic_lanes.count(lane_id) == 0) {
+        sprintf("[GetLocalLaneSamplesByState]fail to get lane id %d.\n",
+                lane_id);
+        return kWrongStatus;
+    }
 }
 }  // namespace semantic_map_manager
 }  // namespace decision_lib

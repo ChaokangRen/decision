@@ -58,6 +58,19 @@ public:
                                        const common::State &state_a,
                                        const common::VehicleParam &param_b,
                                        const common::State &state_b, bool *res);
+
+    ErrorType NaiveRuleBasedLateralBehaviorPrediction(
+        const common::Vehicle &vehicle, const int nearest_lane_id,
+        common::ProbDistOfLatBehaviors *lat_probs);
+
+    ErrorType GetRefLaneForStateByBehavior(const common::State &state,
+                                           const std::vector<int> &navi_path,
+                                           const LateralBehavior &behavior,
+                                           const decimal_t &max_forward_len,
+                                           const decimal_t &max_back_len,
+                                           const bool is_high_quality,
+                                           common::Lane *lane) const;
+
     ErrorType CheckCollisionUsingStateVec(
         const vec_E<common::State> state_vec) const;
 
@@ -77,6 +90,17 @@ public:
                                          const std::vector<int> &navi_path,
                                          int *id, decimal_t *distance,
                                          decimal_t *arc_len) const;
+
+    ErrorType GetTargetLaneId(const int lane_id,
+                              const LateralBehavior &behavior,
+                              int *target_lane_id) const;
+
+    ErrorType GetLocalLaneSamplesByState(const common::State &state,
+                                         const int lane_id,
+                                         const std::vector<int> &navi_path,
+                                         const decimal_t max_reflane_dist,
+                                         const decimal_t max_backward_dist,
+                                         vec_Vecf<2> *samples) const;
     inline double time_stamp() const {
         return time_stamp_;
     }
