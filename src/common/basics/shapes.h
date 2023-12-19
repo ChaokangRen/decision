@@ -1,3 +1,6 @@
+#ifndef _COMMON_BASICS_SHAPES_H_
+#define _COMMON_BASICS_SHAPES_H_
+
 #include <map>
 #include <opencv2/core/core.hpp>
 
@@ -425,3 +428,5 @@ public:
 }  // namespace common
 }  // namespace decision_lib
 }  // namespace jarvis
+
+#endif

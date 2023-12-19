@@ -16,6 +16,7 @@
 #include "basics/tic_toc.h"
 #include "config_loader.h"
 #include "lane/lane.h"
+#include "lane/lane_generator.h"
 #include "state/state.h"
 #include "traffic_signal_manager.h"
 
@@ -72,6 +73,10 @@ public:
         const std::set<std::array<decimal_t, 2>> &obstacle_grids,
         const common::VehicleSet &surrounding_vehicles);
 
+    ErrorType GetNearestLaneIdUsingState(const Vec3f &state,
+                                         const std::vector<int> &navi_path,
+                                         int *id, decimal_t *distance,
+                                         decimal_t *arc_len) const;
     inline double time_stamp() const {
         return time_stamp_;
     }
@@ -192,6 +197,30 @@ private:
 
     ErrorType UpdateKeyVehicles();
 
+    ErrorType SampleLane(const common::Lane &lane, const decimal_t &s0,
+                         const decimal_t &s1, const decimal_t &step,
+                         vec_E<Vecf<2>> *samples, decimal_t *accum_dist) const;
+
+    void GetAllForwardLaneIdPathsWithMinimumLengthByRecursion(
+        const decimal_t &node_id, const decimal_t &node_length,
+        const decimal_t &aggre_length, const std::vector<int> &path_to_node,
+        std::vector<std::vector<int>> *all_paths);
+
+    void GetAllBackwardLaneIdPathsWithMinimumLengthByRecursion(
+        const decimal_t &node_id, const decimal_t &node_length,
+        const decimal_t &aggre_length, const std::vector<int> &path_to_node,
+        std::vector<std::vector<int>> *all_paths);
+
+    ErrorType GetLocalLaneUsingLaneIds(const common::State &state,
+                                       const std::vector<int> &lane_ids,
+                                       const decimal_t max_reflane_dist,
+                                       const decimal_t max_backward_dist,
+                                       const bool &is_high_quality,
+                                       common::Lane *lane);
+
+    ErrorType GetLaneBySampledPoints(const vec_Vecf<2> &samples,
+                                     const bool &is_high_quality,
+                                     common::Lane *lane) const;
     double time_stamp_{0.0};
     decimal_t pred_time_ = 5.0;
     decimal_t pred_step_ = 0.2;

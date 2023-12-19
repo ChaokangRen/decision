@@ -4,6 +4,7 @@
 #include "basics/basics.h"
 #include "basics/config.h"
 #include "lane.h"
+#include "spline/spline_generator.h"
 namespace jarvis {
 namespace decision_lib {
 namespace common {

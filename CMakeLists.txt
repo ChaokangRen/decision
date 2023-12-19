@@ -28,6 +28,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/src/common
     ${CMAKE_SOURCE_DIR}/src/ssc
     ${CMAKE_SOURCE_DIR}/src/semantic_map_manager
+    ${CMAKE_SOURCE_DIR}/src/thridparty
 )
 
 add_subdirectory(src/common)
